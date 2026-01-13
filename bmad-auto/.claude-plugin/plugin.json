@@ -1,0 +1,9 @@
+{
+  "name": "bmad-auto",
+  "version": "1.0.0",
+  "description": "Automated BMad Method story completion loop",
+  "author": {
+    "name": "Your Name",
+    "email": "your@email.com"
+  }
+}
