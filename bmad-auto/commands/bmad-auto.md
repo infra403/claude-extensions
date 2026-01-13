@@ -8,9 +8,6 @@ allowed-tools: ["Task", "Bash"]
 Complete all `ready-for-dev` stories in the sprint.
 
 ```!
-# Set PATH for standard commands
-export PATH="/usr/bin:/bin:/usr/local/bin:$PATH"
-
 # Find sprint status file
 STATUS_FILE="sprint-status.yaml"
 test -f "$STATUS_FILE" || STATUS_FILE="_bmad-output/implementation-artifacts/sprint-status.yaml"
@@ -41,8 +38,11 @@ if [[ -z "$RALPH_PLUGIN_ROOT" ]]; then
   exit 1
 fi
 
-# Start Ralph Loop
-"${RALPH_PLUGIN_ROOT}/scripts/setup-ralph-loop.sh" "Complete all BMad stories with status 'ready-for-dev'. Use Subagent for each story with clean context. Update sprint-status.yaml after each completion. When no more 'ready-for-dev' stories remain, output <promise>ALL_STORIES_COMPLETE</promise>" --completion-promise "ALL_STORIES_COMPLETE"
+# Start Ralph Loop with explicit PATH
+env PATH="/usr/bin:/bin:/usr/local/bin:/usr/local/sbin:/sbin:/usr/sbin" \
+  "${RALPH_PLUGIN_ROOT}/scripts/setup-ralph-loop.sh" \
+  "Complete all BMad stories with status 'ready-for-dev'. Use Subagent for each story with clean context. Update sprint-status.yaml after each completion. When no more 'ready-for-dev' stories remain, output <promise>ALL_STORIES_COMPLETE</promise>" \
+  --completion-promise "ALL_STORIES_COMPLETE"
 ```
 
 ## Instructions (Same for every iteration)
