@@ -8,6 +8,9 @@ allowed-tools: ["Task", "Bash"]
 Complete all `ready-for-dev` stories in the sprint.
 
 ```!
+# Set PATH for standard commands
+export PATH="/usr/bin:/bin:/usr/local/bin:$PATH"
+
 # Find sprint status file
 STATUS_FILE="sprint-status.yaml"
 test -f "$STATUS_FILE" || STATUS_FILE="_bmad-output/implementation-artifacts/sprint-status.yaml"
