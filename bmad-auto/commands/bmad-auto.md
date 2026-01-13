@@ -19,30 +19,14 @@ TOTAL_STORIES=$(grep -c '^  [0-9].*: ready-for-dev$' "$STATUS_FILE")
 
 echo "🚀 BMad Auto: $TOTAL_STORIES stories to complete"
 
-# Find ralph-loop plugin (check user scope, then project scope)
-RALPH_PLUGIN_ROOT=""
-for path in \
-  "$HOME/.claude/plugins/marketplaces/claude-plugins-official/plugins/ralph-loop" \
-  "$HOME/.claude/plugins/cache/claude-plugins-official/ralph-loop" \
-  ".claude/plugins/ralph-loop"
-do
-  if [[ -f "$path/scripts/setup-ralph-loop.sh" ]]; then
-    RALPH_PLUGIN_ROOT="$path"
-    break
-  fi
-done
+# Create Ralph Loop state file directly (bypass setup script)
+# Use printf to create the file
+printf '%s\n' "---" "active: true" "iteration: 1" "max_iterations: 0" "completion_promise: \"ALL_STORIES_COMPLETE\"" "---" "" "Complete all BMad stories with status 'ready-for-dev'. Use Subagent for each story with clean context. Update sprint-status.yaml after each completion. When no more 'ready-for-dev' stories remain, output <promise>ALL_STORIES_COMPLETE</promise>" > .claude/ralph-loop.local.md
 
-if [[ -z "$RALPH_PLUGIN_ROOT" ]]; then
-  echo "❌ Ralph Loop plugin not found!"
-  echo "   Install with: claude plugin install ralph-loop"
-  exit 1
-fi
-
-# Start Ralph Loop with explicit PATH
-env PATH="/usr/bin:/bin:/usr/local/bin:/usr/local/sbin:/sbin:/usr/sbin" \
-  "${RALPH_PLUGIN_ROOT}/scripts/setup-ralph-loop.sh" \
-  "Complete all BMad stories with status 'ready-for-dev'. Use Subagent for each story with clean context. Update sprint-status.yaml after each completion. When no more 'ready-for-dev' stories remain, output <promise>ALL_STORIES_COMPLETE</promise>" \
-  --completion-promise "ALL_STORIES_COMPLETE"
+echo "🔄 Ralph loop activated!"
+echo "Iteration: 1"
+echo "Completion promise: ALL_STORIES_COMPLETE"
+echo ""
 ```
 
 ## Instructions (Same for every iteration)
