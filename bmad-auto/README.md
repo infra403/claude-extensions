@@ -1,166 +1,177 @@
-# BMad Method Auto Plugin
+# BMad Auto Plugin
 
-Fully automated story completion for BMad Method - zero manual intervention required.
+Automated story completion for BMad Method using official Ralph Loop.
 
 ## Overview
 
-This plugin automates the process of completing BMad Method stories by:
-1. Finding the next story from `sprint-status.yaml`
-2. Starting a **fresh Claude Code session** for each story (clean context!)
-3. Completing the story
-4. Updating status and automatically continuing to the next story
-5. Repeating until all stories are done
+`bmad-auto` automates completing BMad Method stories by:
+- Finding all `ready-for-dev` stories from `sprint-status.yaml`
+- Processing each story with **clean context** using Subagent
+- Automatically continuing to the next story
+- Repeating until all stories are done
 
-## Key Feature: Clean Context Per Story
+## Key Features
+
+- **Clean Context Per Story**: Uses Subagent for each story, avoiding context bloat
+- **Zero Manual Intervention**: Once started, runs automatically until completion
+- **Uses Official Ralph Loop**: Built on Claude Code's official Ralph Loop plugin
+
+## How It Works
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                    User runs: /bmad-auto-sprint                      │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  External Bash Loop                                                  │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                                                              │   │
-│  │  Story 1: New Claude Code process → Clean context           │   │
-│  │    ├── Switch to dev branch                                 │   │
-│  │    ├── Implement story                                       │   │
-│  │    ├── Run tests                                             │   │
-│  │    ├── Commit changes                                        │   │
-│  │    └── Exit (Stop Hook updates status)                       │   │
-│  │                                                              │   │
-│  │  Story 2: New Claude Code process → Clean context again!    │   │
-│  │    └── (repeat...)                                           │   │
-│  │                                                              │   │
-│  │  Story 3: New Claude Code process → Clean context again!    │   │
-│  │    └── (repeat...)                                           │   │
-│  │                                                              │   │
-│  │  ...until all stories complete                               │   │
-│  │                                                              │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    User runs: /bmad-auto                     │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Bash: Find stories, start Ralph Loop                        │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│           Ralph Loop - Automatic Iteration                   │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │ Each Iteration:                                       │    │
+│  │ 1. Read sprint-status.yaml                           │    │
+│  │ 2. Find next ready-for-dev story                     │    │
+│  │ 3. Launch Subagent (clean context)                   │    │
+│  │ 4. Update status to done                             │    │
+│  │ 5. If no more stories → output <promise> → exit      │    │
+│  │ 6. Otherwise → Stop Hook repeats same prompt         │    │
+│  └─────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## Quick Start
+## Installation
+
+### Option 1: Install from GitHub (Recommended)
 
 ```bash
-# Auto-complete ALL stories
-/bmad-auto-sprint
+# Clone or download this repository
+cd /path/to/your/project
 
-# Limit to specific number
-/bmad-auto-sprint --max-stories 5
+# Copy the bmad-auto command to your project
+mkdir -p .claude/commands
+cp claude-extensions/bmad-auto/commands/bmad-auto.md .claude/commands/
 ```
 
-That's it! The plugin handles everything else automatically.
+### Option 2: Manual Install
 
-## Workflow
+1. Create `.claude/commands/bmad-auto.md` in your project
+2. Copy the content from [commands/bmad-auto.md](commands/bmad-auto.md)
 
-```
-User: /bmad-auto-sprint
-        ↓
-┌──────────────────────────────────────────────────────┐
-│ 1. Find next backlog story from sprint-status.yaml   │
-│ 2. Create bash loop script                           │
-│ 3. Start loop:                                       │
-│                                                      │
-│    FOR EACH STORY:                                   │
-│    ├─ Mark story as "in-progress"                    │
-│    ├─ Start NEW Claude Code process                  │
-│    ├─ Claude works with FRESH context                │
-│    ├─ Claude outputs <STORY_COMPLETE>                │
-│    ├─ Stop Hook updates sprint-status.yaml           │
-│    ├─ Commit changes                                 │
-│    └─ Loop continues to next story                   │
-│                                                      │
-│ 4. When no more stories: Show completion message     │
-└──────────────────────────────────────────────────────┘
+## Requirements
+
+| Requirement | Description |
+|-------------|-------------|
+| **Ralph Loop Plugin** | Must be installed: `claude-code plugin install ralph-loop` |
+| **BMad Method** | Project with `sprint-status.yaml` |
+| **Dev Story Command** | `/bmad:bmm:workflows:dev-story` must be available |
+
+### Install Ralph Loop
+
+```bash
+claude-code plugin install ralph-loop
 ```
 
-## Commands
+Or manually from: https://github.com/anthropics/ralph-loop
 
-| Command | Description |
-|---------|-------------|
-| `/bmad-auto-sprint` | Start automated sprint (all stories) |
-| `/bmad-auto-sprint --max-stories N` | Limit to N stories |
-| `/cancel-bmad-loop` | Cancel active sprint |
+## Usage
 
-## Why This Approach?
-
-| Problem | Solution |
-|---------|----------|
-| Ralph Wiggum causes context explosion | Each story = new process = clean context |
-| Manual restart is tedious | Bash script handles automatic restarts |
-| Can't automate fully | One command runs everything |
-
-## Completion Signal
-
-Stories are marked complete when Claude outputs:
-```
-<promise><STORY_COMPLETE></promise>
+```bash
+# Start automated story completion
+/bmad-auto
 ```
 
-The Stop Hook detects this and:
-1. Marks current story as `done`
-2. Marks next story as `in-progress`
-3. Commits the changes
-4. Exits cleanly
-
-The bash loop then automatically starts the next story.
-
-## State Files
-
-| File | Purpose |
-|------|---------|
-| `sprint-status.yaml` | BMad Method's sprint state (updated after each story) |
-| `.claude/bmad-auto-loop.sh` | Temporary loop script (auto-created, cleaned up) |
-| `.claude/current-story.md` | Current story task file (per session) |
+That's it! The plugin will:
+1. Count `ready-for-dev` stories
+2. Start Ralph Loop
+3. Process each story automatically
+4. Exit when all stories are complete
 
 ## Example Output
 
 ```
-🚀 BMad Auto Sprint Started!
-Max stories: 0 (unlimited)
+🔄 Ralph loop activated in this session!
 
-═══════════════════════════════════════════════════════════
-Starting story: 1-1-user-registration
-Stories completed: 0
-═══════════════════════════════════════════════════════════
+Iteration: 1
+Max iterations: unlimited
+Completion promise: ALL_STORIES_COMPLETE (ONLY output when TRUE)
 
-[Claude works on story...]
+...
+🚀 BMad Auto: 3 stories to complete
 
-═══════════════════════════════════════════════════════════
-✅ STORY COMPLETE: 1-1-user-registration
-→ Next story: 1-2-user-authentication (auto-continuing)
-═══════════════════════════════════════════════════════════
+[Processing story 1...]
+✅ Story complete, updating status...
 
-Continuing to next story...
+[Processing story 2...]
+✅ Story complete, updating status...
 
-═══════════════════════════════════════════════════════════
-Starting story: 1-2-user-authentication
-Stories completed: 1
-═══════════════════════════════════════════════════════════
+[Processing story 3...]
+✅ All stories complete!
 
-[...and so on until all stories complete...]
+<promise>ALL_STORIES_COMPLETE</promise>
+
+✅ Ralph loop: Detected ALL_STORIES_COMPLETE
 ```
 
-## Requirements
+## How Stories Are Processed
 
-- BMad Method project with `sprint-status.yaml`
-- `git` version control
-- Dev branch exists
-- `jq` for JSON parsing (Stop Hook)
-
-## Files Structure
+Each story is processed by a **Subagent** with clean context:
 
 ```
-bmad-auto/
-├── .claude-plugin/
-│   └── plugin.json
-├── commands/
-│   ├── bmad-auto-sprint.md       # Main automated sprint command
-│   └── cancel-bmad-loop.md       # Cancel command
-├── hooks/
-│   ├── hooks.json
-│   └── stop-hook.sh              # Detect completion, update status
-└── README.md
+Main Session (Ralph Loop)
+├── Tracks overall progress
+├── Reads sprint-status.yaml
+└── Subagent per story
+    ├── Clean context (no bloat)
+    ├── Executes /bmad:bmm:workflows:dev-story
+    ├── Implements, tests, commits
+    └── Returns result
 ```
+
+## Completion Signal
+
+The loop stops when Claude outputs:
+```
+<promise>ALL_STORIES_COMPLETE</promise>
+```
+
+This is only output when **all** `ready-for-dev` stories are done.
+
+## Files
+
+| File | Purpose |
+|------|---------|
+| `.claude/commands/bmad-auto.md` | Main command file |
+| `.claude/plugins/ralph-loop/` | Official Ralph Loop plugin (required) |
+| `sprint-status.yaml` | BMad Method sprint state |
+
+## Troubleshooting
+
+### Ralph Loop not found
+```bash
+# Install official Ralph Loop plugin
+claude-code plugin install ralph-loop
+```
+
+### sprint-status.yaml not found
+Ensure you're in a BMad Method project with the sprint file at:
+- `sprint-status.yaml` (root)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+
+### Loop not continuing
+Check Ralph Loop state:
+```bash
+head -10 .claude/ralph-loop.local.md
+```
+
+To cancel, delete the state file:
+```bash
+rm .claude/ralph-loop.local.md
+```
+
+## License
+
+MIT
